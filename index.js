@@ -1,9 +1,15 @@
+const http = require('http');
 const WebSocket = require('ws');
 const amqp = require('amqplib');
 
 const PORT = process.env.PORT || 8080;
 
-const wss = new WebSocket.Server({ port: PORT });
+const server = http.createServer();
+const wss = new WebSocket.Server({ server });
+
+server.listen(PORT, () => {
+    console.log("Servidor rodando na porta", PORT);
+});
 
 let clients = {};
 
