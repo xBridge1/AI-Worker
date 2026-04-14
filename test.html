@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+const ws = new WebSocket("ws://localhost:8080");
+
+ws.onopen = () => {
+    console.log("Conectado!");
+    ws.send(JSON.stringify({ user_id: 1 }));
+};
+
+ws.onmessage = (event) => {
+    console.log("Resposta:", event.data);
+};
+</script>
+</body>
+</html>
