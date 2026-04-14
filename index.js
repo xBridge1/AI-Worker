@@ -23,6 +23,7 @@ wss.on('connection', (ws) => {
 
 async function start() {
     const conn = await amqp.connect(process.env.RABBITMQ_URL);
+    console.log("URL:", process.env.RABBITMQ_URL);
     const ch = await conn.createChannel();
 
     await ch.assertQueue('chat_requests');
