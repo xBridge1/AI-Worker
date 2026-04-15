@@ -12,52 +12,101 @@ server.listen(PORT, () => {
 });
 
 let clients = {};
+let channel;
 
 wss.on('connection', (ws) => {
-    ws.on('message', (msg) => {
-        const data = JSON.parse(msg);
-        clients[data.user_id] = ws;
-        console.log("Cliente conectado:", data.user_id);
+
+	ws.on('message', async (msg) => {
+		const data = JSON.parse(msg);
+
+		if (data.type === "auth") {
+			if (!clients[data.user_id]) {
+				clients[data.user_id] = new Set();
+			}
+
+			clients[data.user_id].add(ws);
+			ws.user_id = data.user_id;
+
+			console.log("Cliente conectado:", data.user_id);
+			return;
+		}
+
+		if (data.type === "message") {
+			
+			if (!channel) {
+				console.log("Rabbit ainda não pronto");
+				return;
+			}
+			
+			if (!data.request_id) {
+				data.request_id = Date.now() + "-" + Math.random();
+			}
+
+			channel.sendToQueue('chat_requests', Buffer.from(JSON.stringify({
+				user_id: data.user_id,
+				request_id: data.request_id,
+				message: data.message,
+				history: data.history || []
+			})));
+
+			console.log("Enviado pro Rabbit:", data.message);
+		}
+	});
+
+    ws.on('close', () => {
+        if (ws.user_id && clients[ws.user_id]) {
+            clients[ws.user_id].delete(ws);
+
+            if (clients[ws.user_id].size === 0) {
+                delete clients[ws.user_id];
+            }
+        }
     });
 });
 
 async function start() {
     const conn = await amqp.connect(process.env.RABBITMQ_URL);
     console.log("URL:", process.env.RABBITMQ_URL);
-    const ch = await conn.createChannel();
+	channel = await conn.createChannel();
 
-    await ch.assertQueue('chat_requests');
-    await ch.assertQueue('chat_responses');
+	await channel.assertQueue('chat_requests');
+	await channel.assertQueue('chat_responses');
+	
 
     console.log("Worker rodando...");
 
-    ch.consume('chat_requests', async (msg) => {
+    channel.consume('chat_requests', async (msg) => {
         const data = JSON.parse(msg.content.toString());
 
         console.log("Recebido:", data.message);
 
         const response = "Resposta da IA: " + data.message;
+		
+		channel.sendToQueue('chat_responses', Buffer.from(JSON.stringify({
+			user_id: data.user_id,
+			request_id: data.request_id,
+			response: response
+		})));
 
-        ch.sendToQueue('chat_responses', Buffer.from(JSON.stringify({
-            user_id: data.user_id,
-            response: response
-        })));
-
-        ch.ack(msg);
+        channel.ack(msg);
     });
 
-    ch.consume('chat_responses', (msg) => {
+    channel.consume('chat_responses', (msg) => {
         const data = JSON.parse(msg.content.toString());
 
-        const ws = clients[data.user_id];
+		const userSockets = clients[data.user_id];
 
-        if (ws) {
-            ws.send(JSON.stringify({
-                message: data.response
-            }));
-        }
+		if (userSockets) {
+			userSockets.forEach(ws => {
+				ws.send(JSON.stringify({
+					type: "response",
+					request_id: data.request_id,
+					message: data.response
+				}));
+			});
+		}
 
-        ch.ack(msg);
+        channel.ack(msg);
     });
 }
 
