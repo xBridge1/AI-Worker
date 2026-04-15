@@ -81,7 +81,7 @@ async function start() {
         console.log("Recebido:", data.message);
 		
 
-        const response = "Resposta da IA: " + data.message;
+        //const response = "Resposta da IA: " + data.message;
 		
 		const response = gerarRespostaFake(data.message);
 		
