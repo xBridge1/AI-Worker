@@ -75,16 +75,11 @@ async function start() {
 
     console.log("Worker rodando...");
 
-    channel.consume('chat_requests', async (msg) => {
-        const data = JSON.parse(msg.content.toString());
+	channel.consume('chat_requests', async (msg) => {
+		const data = JSON.parse(msg.content.toString());
 
-        console.log("Recebido:", data.message);
-		
+		console.log("Recebido:", data.message);
 
-        //const response = "Resposta da IA: " + data.message;
-		
-		//const response = gerarRespostaFake(data.message);
-		
 		let response = "Erro ao consultar IA";
 
 		try {
@@ -105,15 +100,28 @@ async function start() {
 
 			const json = await aiRes.json();
 			console.log("RESPOSTA IA:", json);
-			response = json.choices[0].message.content;
+
+			if (json.choices && json.choices.length > 0) {
+				response = json.choices[0].message.content;
+			} else {
+				response = "IA não retornou resposta válida";
+			}
 
 		} catch (err) {
 			console.error("Erro IA:", err);
 		}
+
+		channel.sendToQueue('chat_responses', Buffer.from(JSON.stringify({
+			user_id: data.user_id,
+			request_id: data.request_id,
+			response: response
+		})));
+
+		channel.ack(msg);
 	});
 
 const json = await aiRes.json();
-
+console.log("RESPOSTA IA:", json);
 const response = json.choices[0].message.content;
 		
 		channel.sendToQueue('chat_responses', Buffer.from(JSON.stringify({
