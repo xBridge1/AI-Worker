@@ -80,9 +80,10 @@ async function start() {
 
         console.log("Recebido:", data.message);
 		
-		const response = gerarRespostaFake(data.message);
 
         const response = "Resposta da IA: " + data.message;
+		
+		const response = gerarRespostaFake(data.message);
 		
 		channel.sendToQueue('chat_responses', Buffer.from(JSON.stringify({
 			user_id: data.user_id,
