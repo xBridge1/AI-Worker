@@ -104,6 +104,7 @@ async function start() {
 			});
 
 			const json = await aiRes.json();
+			console.log("RESPOSTA IA:", json);
 			response = json.choices[0].message.content;
 
 		} catch (err) {
