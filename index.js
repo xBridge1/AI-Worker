@@ -120,19 +120,6 @@ async function start() {
 		channel.ack(msg);
 	});
 
-const json = await aiRes.json();
-console.log("RESPOSTA IA:", json);
-const response = json.choices[0].message.content;
-		
-		channel.sendToQueue('chat_responses', Buffer.from(JSON.stringify({
-			user_id: data.user_id,
-			request_id: data.request_id,
-			response: response
-		})));
-
-        channel.ack(msg);
-    });
-
     channel.consume('chat_responses', (msg) => {
         const data = JSON.parse(msg.content.toString());
 
