@@ -83,7 +83,26 @@ async function start() {
 
         //const response = "Resposta da IA: " + data.message;
 		
-		const response = gerarRespostaFake(data.message);
+		//const response = gerarRespostaFake(data.message);
+		
+		const aiRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+		method: "POST",
+		headers: {
+			"Authorization": "Bearer " + process.env.GROQ_API_KEY,
+			"Content-Type": "application/json"
+		},
+		body: JSON.stringify({
+			model: "llama3-8b-8192",
+			messages: [
+				...(data.history || []),
+				{ role: "user", content: data.message }
+			]
+		})
+	});
+
+const json = await aiRes.json();
+
+const response = json.choices[0].message.content;
 		
 		channel.sendToQueue('chat_responses', Buffer.from(JSON.stringify({
 			user_id: data.user_id,
