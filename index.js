@@ -85,19 +85,30 @@ async function start() {
 		
 		//const response = gerarRespostaFake(data.message);
 		
-		const aiRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-		method: "POST",
-		headers: {
-			"Authorization": "Bearer " + process.env.GROQ_API_KEY,
-			"Content-Type": "application/json"
-		},
-		body: JSON.stringify({
-			model: "llama3-8b-8192",
-			messages: [
-				...(data.history || []),
-				{ role: "user", content: data.message }
-			]
-		})
+		let response = "Erro ao consultar IA";
+
+		try {
+			const aiRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Authorization": "Bearer " + process.env.GROQ_API_KEY,
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({
+					model: "llama3-8b-8192",
+					messages: [
+						...(data.history || []),
+						{ role: "user", content: data.message }
+					]
+				})
+			});
+
+			const json = await aiRes.json();
+			response = json.choices[0].message.content;
+
+		} catch (err) {
+			console.error("Erro IA:", err);
+		}
 	});
 
 const json = await aiRes.json();
