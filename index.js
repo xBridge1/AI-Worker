@@ -79,6 +79,8 @@ async function start() {
         const data = JSON.parse(msg.content.toString());
 
         console.log("Recebido:", data.message);
+		
+		const response = gerarRespostaFake(data.message);
 
         const response = "Resposta da IA: " + data.message;
 		
@@ -109,5 +111,12 @@ async function start() {
         channel.ack(msg);
     });
 }
+
+function gerarRespostaFake(msg) {
+    if (msg.includes("oi")) return "Olá! Sou a calliope sua agente de IA pessoal posso ajudar?";
+    if (msg.includes("rabbit")) return "RabbitMQ é um message broker.";
+    return "Entendi: " + msg;
+}
+
 
 start();
